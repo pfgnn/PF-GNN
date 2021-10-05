@@ -19,13 +19,10 @@ def train(model, loader, optimizer, device, parallel=True, regression=True):
         out, ls2, batch_size = model(data)
         if regression == True:    
             loss1 = (out.squeeze() - y).abs() #.mean()
-            #loss1 = regress_los(out, y).mean(1) # consider using this if multiple regreesion outputs
         else:
             loss1 = classify_loss(out, y.to(torch.long))
         likelihood = loss1.unsqueeze(1).detach() #- val_ls.unsqueeze(1)
         loss2 = (ls2*(likelihood)).mean(1) # ls2:b x (k*d)
-        # likelihood = torch.exp(-loss1).unsqueeze(1).detach() #- val_ls.unsqueeze(1)
-        # loss2 = (-ls2*(likelihood)).mean(1) # ls2:b x (k*d)
         loss = loss1.mean() + (gamma * loss2.mean()) #+ ls2
         loss.backward()
         total_loss += loss.item() * batch_size.sum().item() 
