@@ -12,7 +12,6 @@ from torch_geometric.utils import degree
 from worker import train, test
 from model import PFGNN_Net
 from gnn_models import GNN, GNN_TRIANGLES
-#from utils import NodeFeatures, split_stratified_sampling, get_trainvalfolds
 import torch.nn.functional as F
 import numpy as np
 import networkx as nx
@@ -97,7 +96,6 @@ def main():
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
                                         factor=args.factor, patience=args.patience,
                                         min_lr=args.min_lr)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=50,gamma=0.5)
     print("Total parameters: ", sum(p.numel() for p in model.parameters()))
     torch.autograd.set_detect_anomaly(True)            
     start = None
