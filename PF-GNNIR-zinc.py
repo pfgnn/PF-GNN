@@ -60,14 +60,9 @@ class PFGNN_Net(torch.nn.Module):
         self.fc_particle = Sequential(Linear((self.depth*1+1)*dim, (self.depth*1+1)*dim))
         self.node_fc1 = Sequential(Linear(dim, dim), ReLU(), Linear(dim, dim))
         self.node_fc2 = Sequential(Linear(dim, dim), ReLU(), Linear(dim, 1))
-        # self.mlp = Sequential(Linear((self.depth*1+1)*dim, self.depth*dim), ReLU(), 
-        #             Linear(self.depth*dim, dim), ReLU(),
-        #             Linear(dim, outdim))
         self.mlp = Sequential(Linear((self.depth+1)*dim, 2*dim), ReLU(), 
             Linear(2*dim, dim), ReLU(),
             Linear(dim, outdim))
-        #self.normalize = BatchNorm(dim)
-        # self.multihead_attn = torch.nn.MultiheadAttention(embed_dim=2*dim, num_heads=2)
         model_reset_parameters(self)
         
                        
@@ -294,10 +289,7 @@ def main():
     args = parser.parse_args()
     print (args)
 
-    # path = osp.join(osp.dirname(osp.realpath(__file__)), \
-    #                 'data', args.task_name)
     path = osp.join(osp.dirname(osp.realpath(__file__)), 'data', 'ZINC')
-    # transforms = T.Compose([Complete]) AddVnode())
     
     train_dataset = ZINC(path, subset=True, split='train')
     val_dataset = ZINC(path, subset=True, split='val')
@@ -317,10 +309,6 @@ def main():
             self.node_emb = Embedding(node_infeat, dim) 
             self.edge_emb = Embedding(edge_infeat, dim//3) 
             self.pfgnn = PFGNN_Net(outdim=outdim, dim=dim, depth=depth, num_particles=num_particles, gnn=gnn, deg=deg)
-            # self.gnn = gnn(num_layers=5, hidden=dim, readout_bn=True, divide_input=False, deg=deg)
-            # self.mlp = Sequential(Linear(dim, dim), ReLU(), 
-            #         Linear(dim, dim), ReLU(),
-            #         Linear(dim, outdim))
 
         def reset_parameters(self):
             self.node_emb.reset_parameters()
@@ -331,9 +319,6 @@ def main():
             out = self.node_emb(data.x.squeeze())
             edge_attr = self.edge_emb(data.edge_attr)  
             out, log_probs, batch_size = self.pfgnn(node_emb=out, edge_emb=edge_attr, data=data)
-            # o_out,h_out  = self.gnn(out, data.edge_index, edge_attr=edge_attr, batch=data.batch)
-            # out = global_add_pool(h_out, data.batch)
-            # out = self.mlp(out)
             return out, log_probs, data.batch.max()+1 #batch_size log_probs, 
 
     device = torch.device("cuda:" + str(args.device)) if torch.cuda.is_available() else torch.device("cpu")
