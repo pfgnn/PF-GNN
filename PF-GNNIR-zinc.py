@@ -216,9 +216,7 @@ class PFGNN_Net(torch.nn.Module):
 
         weight_prob = torch.tensor([1/self.num_particles]*self.num_particles, device=out.device).unsqueeze(1).repeat(1, batch_size)
         weight_log = weight_prob.log()
-        #####TRIANGLES-h_out, ZINC-out
         readout = h_out.unsqueeze(0).repeat(self.num_particles, 1, 1).view(-1, h_out.size(1)) 
-        readout = readout #* weight_prob[:, data.batch].view(-1).unsqueeze(-1)
         final_out_list.append(readout)
         weight_probs_list.append(weight_prob.unsqueeze(-1).unsqueeze(-1))
 
@@ -240,22 +238,17 @@ class PFGNN_Net(torch.nn.Module):
             nodes_comp, readout_comp, weight_log = self.resample(nodes_comp, readout, weight_prob, data.batch)
             
             weight_prob = torch.exp(weight_log)    
-            read_out = readout_comp #* weight_prob[:, data.batch].view(-1).unsqueeze(-1)  
-            #nodes = nodes_comp.view(self.num_particles, out.size(0), -1) #torch.cat(out_list, dim=0)          
-            #readout = readout.view(self.num_particles, out.size(0), -1).sum(0) #torch.cat(readout_list, dim=0)
-            
+            read_out = readout_comp
             final_out_list.append(readout)
             weight_probs_list.append(weight_prob.unsqueeze(-1).unsqueeze(-1))    
-        # out = final_out_list[-1]
+        
         out = torch.cat(final_out_list,dim=-1)
         out = out.view(self.num_particles, num_nodes, -1)
         
         out = scatter_add(out, data.batch, dim=1) # out is particls x batchsize x (L*dim)
         out = out.view(self.num_particles, batch_size, self.depth+1, -1)
         weight_prob = torch.cat(weight_probs_list, dim=-2)
-        # print (weight_prob)
         out = (out * weight_prob).max(0)[0].view(batch_size, -1)
-        # out = (out[:,:,-1,:] * weight_prob[:,:,-1,:]).mean(0).view(batch_size, -1)
 
         out = self.mlp(out)
         log_probs = torch.cat(log_probs, dim=1).squeeze(-1)
